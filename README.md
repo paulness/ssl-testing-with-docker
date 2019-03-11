@@ -36,6 +36,12 @@ openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr
 
 #### nginx
 
+_All references to `help.paulsness.com` in this README should be replaced with your own site host._
+
+##### Modify hosts file
+
+For Mac you need to edit the file `/etc/hosts` and redirect traffic from `help.paulsness.com` to `127.0.0.1`.
+
 ##### Copy your certificate files
 
 - `nginx/certs/sample.site.full_chain_cert.crt` - Copy the contents of your full chain cert here
@@ -48,7 +54,7 @@ cd nginx
 
 # Replace the place holder in the nginx conf with your own host
 PLACEHOLDER_HOST='<YOUR_HOST_HERE>'
-HOST='help.mysite.com'
+HOST='help.paulsness.com'
 sed -i sample.site.conf "s,${PLACEHOLDER_HOST},${HOST},g"
 
 # Build
@@ -58,9 +64,9 @@ docker build . -t ssl-test-nginx
 docker run -it --rm \
  -p 80:80 \
  -p 443:443 \
- ssl-test-nginx \
  -v $(pwd)/certs:/etc/nginx/certs \
- -v $(pwd)/sample.site.conf:/etc/nginx/conf.d/ \
+ -v $(pwd)/sample.site.conf:/etc/nginx/conf.d/sample.site.conf \
+ ssl-test-nginx \
  /bin/sh
 ```
 
@@ -70,14 +76,21 @@ docker run -it --rm \
 nginx -g "daemon off;"
 ```
 
-##### Modify hosts file
-
-For mac you need to edit the file `/etc/hosts` and redirect traffic from `help.mysite.com` to `127.0.0.1`.
-
 ##### Check SSL is working
 
-You should run this command and check that no errors are shown at all, see screenshot
+You should run this command and check that no errors are shown at all you should see `Verify return code: 0 (ok)`.
 
+```bash
+openssl s_client -connect help.paulsness.com:443 -debug
 ```
-openssl s_client -connect help.mysite.com:443 -debug
+
+[![See screenshot](readme-assets/open-ssl-test.png?raw=true)]
+
+##### Remove docker image from system
+
+You'll probably want to stop the container and remove the docker image to cleanup your system after running this test.
+
+```bash
+docker stop $(docker ps -q --filter ancestor=ssl-test-nginx )
+docker rmi ssl-test-nginx
 ```
