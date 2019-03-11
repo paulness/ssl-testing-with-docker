@@ -34,51 +34,73 @@ openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr
 
 ### Test your SSL certificate works
 
-#### nginx
-
 _All references to `help.paulsness.com` in this README should be replaced with your own site host._
 
-##### Modify hosts file
+#### Modify hosts file
 
 For Mac you need to edit the file `/etc/hosts` and redirect traffic from `help.paulsness.com` to `127.0.0.1`.
 
-##### Copy your certificate files
+#### Copy your certificate files
 
-- `nginx/certs/sample.site.full_chain_cert.crt` - Copy the contents of your full chain cert here
-- `nginx/certs/sample.site.sample.site.private.key` - Copy the contents of your private.key here
+- `certs/sample.site.full_chain_cert.crt` - Copy the contents of your full chain cert here
+- `certs/sample.site.sample.site.private.key` - Copy the contents of your private.key here
 
-##### Get terminal running with Nginx
+#### Launch the server with your certificates locally
+
+##### Nginx
+
+Get terminal running with Nginx
 
 ```bash
-cd nginx
-
 # Replace the place holder in the nginx conf with your own host
 PLACEHOLDER_HOST='<YOUR_HOST_HERE>'
 HOST='help.paulsness.com'
-sed -i "" "s,${PLACEHOLDER_HOST},${HOST},g" sample.site.conf
+sed -i "" "s,${PLACEHOLDER_HOST},${HOST},g" nginx/sample.site.conf
 
 # Build
-docker build . -t ssl-test-nginx
+docker build nginx -t ssl-test-nginx
 
 # Run nginx
 docker run -it --rm \
  -p 80:80 \
  -p 443:443 \
  -v $(pwd)/certs:/etc/nginx/certs \
- -v $(pwd)/sample.site.conf:/etc/nginx/conf.d/sample.site.conf \
+ -v $(pwd)/nginx/sample.site.conf:/etc/nginx/conf.d/sample.site.conf \
  ssl-test-nginx \
  /bin/sh
 ```
 
-##### Start Nginx once inside terminal
+Start Nginx once inside terminal
 
 ```bash
 nginx -g "daemon off;"
 ```
 
-##### Check SSL is working
+##### TomCat
 
-You should run this command and check that no errors are shown at all you should see `Verify return code: 0 (ok)`.
+```bash
+# Build tomcat docker image
+docker build tomcat -t ssl-test-tomcat
+
+# Run Tomcat server and terminal
+docker run -it --rm \
+  -p 443:8443 \
+  -v $(pwd)/tomcat/server.xml:/usr/local/tomcat/conf/server.xml \
+  -v $(pwd)/certs/sample.site.full_chain_cert.crt:/usr/local/tomcat/conf/ssl.crt \
+  -v /$(pwd)/certs/sample.site.private.key:/usr/local/tomcat/conf/ssl.key \
+  ssl-test-tomcat \
+  /bin/sh
+```
+
+Start TomCat server once inside terminal
+
+```bash
+catalina.sh run
+```
+
+#### Check SSL certificates are valid after launching
+
+You should run this command in a new terminal and check that no errors are shown. You should see `Verify return code: 0 (ok)`.
 
 ```bash
 openssl s_client -connect help.paulsness.com:443 -debug
@@ -91,6 +113,11 @@ openssl s_client -connect help.paulsness.com:443 -debug
 You'll probably want to stop the container and remove the docker image to cleanup your system after running this test.
 
 ```bash
+# Nginx
 docker stop $(docker ps -q --filter ancestor=ssl-test-nginx )
 docker rmi ssl-test-nginx
+
+# TomCat
+docker stop $(docker ps -q --filter ancestor=ssl-test-tomcat )
+docker rmi ssl-test-tomcat
 ```
