@@ -55,7 +55,7 @@ cd nginx
 # Replace the place holder in the nginx conf with your own host
 PLACEHOLDER_HOST='<YOUR_HOST_HERE>'
 HOST='help.paulsness.com'
-sed -i sample.site.conf "s,${PLACEHOLDER_HOST},${HOST},g"
+sed -i "" "s,${PLACEHOLDER_HOST},${HOST},g" sample.site.conf
 
 # Build
 docker build . -t ssl-test-nginx
@@ -84,7 +84,7 @@ You should run this command and check that no errors are shown at all you should
 openssl s_client -connect help.paulsness.com:443 -debug
 ```
 
-[![See screenshot](readme-assets/open-ssl-test.png?raw=true)]
+![See screenshot](readme-assets/open-ssl-test.png?raw=true)
 
 ##### Remove docker image from system
 
